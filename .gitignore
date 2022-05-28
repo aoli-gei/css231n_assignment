@@ -1,0 +1,5 @@
+ipynb_checkpoints/
+.vscode/
+cs231n_env/
+env/
+assignment1/cs231n/datasets
