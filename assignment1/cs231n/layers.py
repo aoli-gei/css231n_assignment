@@ -1,6 +1,6 @@
 from builtins import range
+from matplotlib.pyplot import axis, margins
 import numpy as np
-
 
 
 def affine_forward(x, w, b):
@@ -27,9 +27,10 @@ def affine_forward(x, w, b):
     # will need to reshape the input into rows.                               #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
-
+    x_vector = x.reshape(x.shape[0], -1)
+    # print(x.shape)
+    out = x_vector.dot(w)
+    out += b
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
@@ -60,8 +61,11 @@ def affine_backward(dout, cache):
     # TODO: Implement the affine backward pass.                               #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    dx = dout.dot(w.T).reshape(x.shape)
+    x_vector = x.reshape(x.shape[0], -1)
+    # print(dx.shape)
+    dw = x_vector.T.dot(dout).reshape(w.shape)
+    db = np.sum(dout, axis=0)  # 注意画图
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -87,7 +91,8 @@ def relu_forward(x):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x = np.reshape(x, (x.shape[0], -1))  # 先把他拆分成单个向量
+    out = np.maximum(0, x)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -114,7 +119,8 @@ def relu_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    mask = np.int64(x > 0)
+    dx = dout*mask
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -145,7 +151,17 @@ def svm_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_train = x.shape[0]
+    num_class = x.shape[1]
+    correct_class_score = x[range(num_train), [y]].T  # 注意这个到底是啥意思呜呜呜
+    margin = np.maximum(0, x-correct_class_score+1)
+    margin[range(num_train), y] = 0
+    loss = np.sum(margin)/num_train
+
+    margin[margin > 0] = 1
+    incorrect_number = np.sum(margin, axis=1)
+    margin[range(num_train), y] -= incorrect_number
+    dx = margin/num_train
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -176,7 +192,14 @@ def softmax_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_train = x.shape[0]
+    scores = x - np.max(x, axis=1, keepdims=True)  # 进行平移
+    f = np.exp(scores)  # 用e进行归一化
+    normalized_f = f/np.sum(f, axis=1, keepdims=True)
+    loss = np.sum(-np.log(f[range(num_train), y]/np.sum(f, axis=1)))/num_train
+
+    normalized_f[range(num_train), y] -= 1
+    dx = normalized_f/num_train
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

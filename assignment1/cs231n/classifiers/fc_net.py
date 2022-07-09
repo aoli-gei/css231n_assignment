@@ -11,6 +11,8 @@ class TwoLayerNet(object):
     A two-layer fully-connected neural network with ReLU nonlinearity and
     softmax loss that uses a modular layer design. We assume an input dimension
     of D, a hidden dimension of H, and perform classification over C classes.
+    一个两层全连接神经网络，使用ReLU激活函数，softmax损失
+    假设输入维度为D，隐藏层维度H，分为C类
 
     The architecure should be affine - relu - affine - softmax.
 

@@ -2,6 +2,7 @@ from __future__ import print_function
 
 from builtins import range
 from builtins import object
+from matplotlib.pyplot import axis
 import numpy as np
 from ..classifiers.linear_svm import *
 from ..classifiers.softmax import *
@@ -31,13 +32,13 @@ class LinearClassifier(object):
         - y: A numpy array of shape (N,) containing training labels; y[i] = c
           means that X[i] has label 0 <= c < C for C classes.
         - learning_rate: (float) learning rate for optimization.
-        - reg: (float) regularization strength.
-        - num_iters: (integer) number of steps to take when optimizing
-        - batch_size: (integer) number of training examples to use at each step.
-        - verbose: (boolean) If true, print progress during optimization.
+        - reg: (float) regularization strength. # 正则惩罚项
+        - num_iters: (integer) number of steps to take when optimizing  #步数
+        - batch_size: (integer) number of training examples to use at each step.  每次训练使用的图片数量
+        - verbose: (boolean) If true, print progress during optimization. 如果是true的话，输出最优化过程
 
         Outputs:
-        A list containing the value of the loss function at each training iteration.
+        A list containing the value of the loss function at each training iteration. 一个列表，包含每次训练的损失
         """
         num_train, dim = X.shape
         num_classes = (
@@ -66,7 +67,10 @@ class LinearClassifier(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            chouyang =np.random.choice(range(num_train),batch_size,replace=False)
+            # print(chouyang)
+            X_batch=X[chouyang]
+            y_batch=y[chouyang]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -81,13 +85,14 @@ class LinearClassifier(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            self.W -=learning_rate*grad
+            
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
             if verbose and it % 100 == 0:
                 print("iteration %d / %d: loss %f" % (it, num_iters, loss))
-
+      
         return loss_history
 
     def predict(self, X):
@@ -110,8 +115,11 @@ class LinearClassifier(object):
         # Implement this method. Store the predicted labels in y_pred.            #
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        scores=X.dot(self.W)
+        y_pred=np.argmax(scores,axis=1)
+        # for i in range(y_pred.size):
+        #   y_pred[i]=np.argmax(scores[i])
+        
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return y_pred
