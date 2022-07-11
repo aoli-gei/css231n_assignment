@@ -14,18 +14,27 @@ from cs231n import optim
 
 class Solver(object):
     """
-    A Solver encapsulates all the logic necessary for training classification
+    A Solver encapsulates封装 all the logic necessary for training classification
     models. The Solver performs stochastic gradient descent using different
     update rules defined in optim.py.
+    Solver 封装了训练分类模型所需的所有逻辑
+    Solver 使用optim.py 中定义的不同更新规则来执行随机梯度下降
 
     The solver accepts both training and validataion data and labels so it can
     periodically check classification accuracy on both training and validation
     data to watch out for overfitting.
+    Solver 接受训练和验证数据和标签，因此它可以
+    定期检查训练和验证的分类准确性
+    数据要注意过拟合。
 
     To train a model, you will first construct a Solver instance, passing the
     model, dataset, and various options (learning rate, batch size, etc) to the
     constructor. You will then call the train() method to run the optimization
     procedure and train the model.
+    要训​​练模型，您将首先构建一个 Solver 实例，将
+    模型、数据集和各种选项（学习率、批量大小等）
+    构造函数。然后您将调用 train() 方法来运行优化
+    程序和训练模型。
 
     After the train() method returns, model.params will contain the parameters
     that performed best on the validation set over the course of training.
@@ -33,7 +42,14 @@ class Solver(object):
     of all losses encountered during training and the instance variables
     solver.train_acc_history and solver.val_acc_history will be lists of the
     accuracies of the model on the training and validation set at each epoch.
+    train() 方法返回后，model.params 将包含
+    在训练过程中在验证集上表现最好参数
+    此外，实例变量solver.loss_history 将包含一个列表
+    训练期间遇到的所有损失和实例变量
+    solver.train_acc_history 和 solver.val_acc_history 将是
+    模型在每个时期的训练和验证集上的准确性。
 
+    示例用法可能如下所示：
     Example usage might look something like this:
 
     data = {

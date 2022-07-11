@@ -28,7 +28,6 @@ def affine_forward(x, w, b):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     x_vector = x.reshape(x.shape[0], -1)
-    # print(x.shape)
     out = x_vector.dot(w)
     out += b
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -91,8 +90,9 @@ def relu_forward(x):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    x = np.reshape(x, (x.shape[0], -1))  # 先把他拆分成单个向量
+    out = np.reshape(x, (x.shape[0], -1))  # 先把他拆分成单个向量
     out = np.maximum(0, x)
+    out.reshape(x.shape)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

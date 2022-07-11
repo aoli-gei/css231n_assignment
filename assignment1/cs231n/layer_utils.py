@@ -21,6 +21,7 @@ def affine_relu_forward(x, w, b):
 
 def affine_relu_backward(dout, cache):
     """
+    全连接relu，反向传播
     Backward pass for the affine-relu convenience layer
     """
     fc_cache, relu_cache = cache
