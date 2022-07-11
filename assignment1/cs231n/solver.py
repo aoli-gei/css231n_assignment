@@ -1,15 +1,13 @@
 from __future__ import print_function, division
+from cs231n import optim
+import numpy as np
+import pickle as pickle
+import os
+from builtins import object
+from builtins import range
 from future import standard_library
 
 standard_library.install_aliases()
-from builtins import range
-from builtins import object
-import os
-import pickle as pickle
-
-import numpy as np
-
-from cs231n import optim
 
 
 class Solver(object):
@@ -136,6 +134,40 @@ class Solver(object):
         self.y_train = data["y_train"]
         self.X_val = data["X_val"]
         self.y_val = data["y_val"]
+
+        # 将图片转化成向量
+        X_train_vector = self.X_train.reshape(self.X_train.shape[0], -1)  # 将图片转化为向量
+        X_val_vector = self.X_val.reshape(self.X_val.shape[0], -1)
+
+        # 数据零中心化
+        X_val_vector -= np.mean(X_train_vector, axis=0)
+        X_train_vector -= np.mean(X_train_vector, axis=0)
+
+        # # 计算数据协方差矩阵
+        # cov = np.dot(X_train_vector.T, X_train_vector)
+
+        # # 奇异值分解
+        # U, S, V = np.linalg.svd(cov)
+
+        # # 去除数据相关性（就没有进行主成分分析了）
+        # X_train_rot = np.dot(X_train_vector, U)
+        # X_val_rot = np.dot(X_val_vector, U)
+
+        # # 进行白化操作
+        # X_train_white = X_train_rot/np.sqrt(S+1e-5)
+        # X_val_white = X_val_rot/np.sqrt(S+1e-5)
+
+        # #预处理完成，赋值
+        # self.X_train = X_train_white.reshape(self.X_train.shape)
+        # self.X_val=X_val_white.reshape(self.X_val.shape)
+
+        # # 数据归一化
+        # X_val_vector /= np.std(X_train_vector, axis=0)
+        # X_train_vector /= np.std(X_train_vector, axis=0)
+
+        # 数据写入
+        self.X_train = X_train_vector.reshape(self.X_train.shape)
+        self.X_val = X_val_vector.reshape(self.X_val.shape)
 
         # Unpack keyword arguments
         self.update_rule = kwargs.pop("update_rule", "sgd")

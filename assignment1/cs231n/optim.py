@@ -36,7 +36,6 @@ setting next_w equal to w.
 设置 next_w 等于 w。
 """
 
-
 def sgd(w, dw, config=None):
     """
     Performs vanilla stochastic gradient descent.
