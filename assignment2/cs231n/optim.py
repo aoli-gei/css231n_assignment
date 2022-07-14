@@ -9,12 +9,13 @@ weights. Each update rule has the same interface:
 def update(w, dw, config=None):
 
 Inputs:
-  - w: A numpy array giving the current weights.
+  - w: A numpy array giving the current weights. w是一个 numpy 数组，记录了权重
   - dw: A numpy array of the same shape as w giving the gradient of the
-    loss with respect to w.
+    loss with respect to w. dw 和 dw 的大小一样，是梯度
   - config: A dictionary containing hyperparameter values such as learning
     rate, momentum, etc. If the update rule requires caching values over many
     iterations, then config will also hold these cached values.
+    config是一个字典，里面有很多超参数，比如动量，学习率啥的
 
 Returns:
   - next_w: The next point after the update.
@@ -69,7 +70,8 @@ def sgd_momentum(w, dw, config=None):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    v=config['momentum']*v-config['learning_rate']*dw
+    next_w=w+v
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -107,7 +109,10 @@ def rmsprop(w, dw, config=None):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    cache=config['cache']
+    cache = config['decay_rate']*cache + (1-config['decay_rate'])*dw**2
+    next_w=w-config['learning_rate']*dw/(np.sqrt(cache)+config['epsilon'])
+    config['cache']=cache # 更新cache
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -151,8 +156,28 @@ def adam(w, dw, config=None):
     # using it in any calculations.                                           #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    learning_rate=config['learning_rate']
+    epsilon=config['epsilon']
+    t=config['t']
+    m=config['m']
+    v=config['v']
+    beta1=config['beta1']
+    beta2=config['beta2']
 
-    pass
+    t+=1
+
+    m=beta1*m+(1-beta1)*dw
+    v=beta2*v+(1-beta2)*dw**2
+
+    mt=m/(1-beta1**t)
+    vt=v/(1-beta2**t)
+    next_w=w-learning_rate*mt/(np.sqrt(vt)+epsilon)
+
+    config['t']=t
+    config['m']=m
+    config['v']=v
+
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

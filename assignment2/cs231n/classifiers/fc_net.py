@@ -8,12 +8,13 @@ from ..layer_utils import *
 
 class FullyConnectedNet(object):
     """Class for a multi-layer fully connected neural network.
-
+    多层网络的类
     Network contains an arbitrary number of hidden layers, ReLU nonlinearities,
     and a softmax loss function. This will also implement dropout and batch/layer
     normalization as options. For a network with L layers, the architecture will be
 
     {affine - [batch/layer norm] - relu - [dropout]} x (L - 1) - affine - softmax
+    👆网络结构
 
     where batch/layer normalization and dropout are optional and the {...} block is
     repeated L - 1 times.
@@ -73,8 +74,23 @@ class FullyConnectedNet(object):
         # parameters should be initialized to zeros.                               #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        
+        layer_dims = np.hstack((input_dim, hidden_dims, num_classes))
 
-        pass
+        for i in range(self.num_layers):
+            W = np.random.normal(loc=0.0, scale=weight_scale, size=(layer_dims[i], layer_dims[i+1]))
+            b = np.zeros(layer_dims[i+1])
+
+            self.params['W' + str(i+1)] = W
+            self.params['b'+str(i+1)] = b
+
+        if normalization == 'batchnorm':
+            for i in range(self.num_layers-1):
+                gamma = np.ones(layer_dims[i+1])
+                beta = np.zeros(layer_dims[i+1])
+
+                self.params['gamma'+str(i+1)] = gamma
+                self.params['beta'+str(i+1)] = beta
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -97,7 +113,8 @@ class FullyConnectedNet(object):
         # pass of the second batch normalization layer, etc.
         self.bn_params = []
         if self.normalization == "batchnorm":
-            self.bn_params = [{"mode": "train"} for i in range(self.num_layers - 1)]
+            self.bn_params = [{"mode": "train"}
+                              for i in range(self.num_layers - 1)]
         if self.normalization == "layernorm":
             self.bn_params = [{} for i in range(self.num_layers - 1)]
 
@@ -107,7 +124,7 @@ class FullyConnectedNet(object):
 
     def loss(self, X, y=None):
         """Compute loss and gradient for the fully connected net.
-        
+
         Inputs:
         - X: Array of input data of shape (N, d_1, ..., d_k)
         - y: Array of labels, of shape (N,). y[i] gives the label for X[i].
@@ -147,8 +164,29 @@ class FullyConnectedNet(object):
         # layer, etc.                                                              #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        x=X
+        caches=[]   # 保存有网络的中间信息
+        for i in range(self.num_layers-1):
+            W=self.params['W'+str(i+1)]
+            b=self.params['b'+str(i+1)]
 
-        pass
+            # 无 BN，无 dropout
+            if self.normalization == None:
+                out,cache=affine_relu_forward(x,W,b)
+            
+            elif self.normalization == 'batchnorm':
+                gamma=self.params['gamma'+str(i+1)]
+                beta=self.params['beta'+str(i+1)]
+                bn_param=self.bn_params[i]
+                out,cache=affine_bn_relu_forward(x,W,b,gamma,beta,bn_param)
+
+            # 保存
+            caches.append(cache)# 保存了当前层的输入信息
+            x=out
+
+        scores,cache=affine_forward(x,self.params['W'+str(self.num_layers)],self.params['b'+str(self.num_layers)])
+        caches.append(cache)    # 保存了最后一层的输入信息，为(x,w,b)
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -175,7 +213,31 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss,dscores=softmax_loss(scores,y)
+        for i in range(self.num_layers):
+            W=self.params['W'+str(i+1)]
+            loss+=0.5*self.reg*np.sum(W**2)
+
+        dout,dW,db=affine_backward(dscores,caches[self.num_layers-1])
+        dW+=self.reg*self.params['W'+str(self.num_layers)]
+
+        grads['W'+str(self.num_layers)]=dW
+        grads['b'+str(self.num_layers)]=db
+
+        if self.normalization == None:
+            for i in range(self.num_layers-2,-1,-1):
+                dout,dW,db=affine_relu_backward(dout,caches[i])
+                dW+=self.reg*self.params['W'+str(i+1)]
+                grads['W'+str(i+1)]=dW
+                grads['b'+str(i+1)]=db
+        elif self.normalization == "batchnorm":
+            for i in range(self.num_layers-2,-1,-1):
+                dout,dW,db,dgamma,dbeta = affine_bn_relu_backward(dout,caches[i])
+                dW+=self.reg*self.params['W'+str(i+1)]
+                grads['W'+str(i+1)]=dW
+                grads['b'+str(i+1)]=db
+                grads['gamma'+str(i+1)]=dgamma
+                grads['beta'+str(i+1)]=dbeta
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################

@@ -6,6 +6,7 @@
 	],
 	"settings": {
 		"jupyter.jupyterServerType": "local",
-		"editor.formatOnType": true
+		"editor.formatOnType": true,
+		"python.envFile": "${workspaceFolder}/.cs231n_env"
 	}
 }

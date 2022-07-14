@@ -25,7 +25,9 @@ def affine_forward(x, w, b):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x_vector = x.reshape(x.shape[0], -1)
+    out = x_vector.dot(w)
+    out += b
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -57,7 +59,11 @@ def affine_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    dx = dout.dot(w.T).reshape(x.shape)
+    x_vector = x.reshape(x.shape[0], -1)
+    # print(dx.shape)
+    dw = x_vector.T.dot(dout).reshape(w.shape)
+    db = np.sum(dout, axis=0)  # 注意画图
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -82,7 +88,9 @@ def relu_forward(x):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    out = np.reshape(x, (x.shape[0], -1))  # 先把他拆分成单个向量
+    out = np.maximum(0, x)
+    out.reshape(x.shape)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -108,7 +116,8 @@ def relu_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    mask = np.int64(x > 0)
+    dx = dout*mask
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -137,7 +146,17 @@ def softmax_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    num_train = x.shape[0]
+    num_class = x.shape[1]
+    correct_class_score = x[range(num_train), [y]].T  # 注意这个到底是啥意思呜呜呜
+    margin = np.maximum(0, x-correct_class_score+1)
+    margin[range(num_train), y] = 0
+    loss = np.sum(margin)/num_train
+
+    margin[margin > 0] = 1
+    incorrect_number = np.sum(margin, axis=1)
+    margin[range(num_train), y] -= incorrect_number
+    dx = margin/num_train
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -156,7 +175,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     data at test-time.
 
     At each timestep we update the running averages for mean and variance using
-    an exponential decay based on the momentum parameter:
+    an exponential指数 decay based on the momentum parameter:
 
     running_mean = momentum * running_mean + (1 - momentum) * sample_mean
     running_var = momentum * running_var + (1 - momentum) * sample_var
@@ -167,6 +186,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     this implementation we have chosen to use running averages instead since
     they do not require an additional estimation step; the torch7
     implementation of batch normalization also uses running averages.
+    论文中使用的样本均值和方差是用一个大训练数据集的均值和方差，而在本实验我们用的是正在运行的均值和方差
 
     Input:
     - x: Data of shape (N, D)
@@ -216,7 +236,17 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        sample_mean=np.mean(x,axis=0)
+        sample_var=np.var(x,axis=0)
+        std=np.sqrt(sample_var+eps)
+        x_norm=(x-sample_mean)/std
+        out=gamma*x_norm+beta
+
+        running_mean = momentum * running_mean + (1 - momentum) * sample_mean
+        running_var = momentum * running_var + (1 - momentum) * sample_var
+
+        cache=(x,x_norm,gamma,sample_mean,sample_var,eps)
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -231,7 +261,9 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        std=np.sqrt(running_var+eps)
+        x_norm=(x-running_mean)/std
+        out=gamma*x_norm+beta
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -272,7 +304,18 @@ def batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x,x_norm,gamma,sample_mean,sample_var,eps=cache # (x,x_norm,gamma,sample_mean,sample_var,eps)
+    dgamma=np.sum(dout*x_norm,axis=0)  # 注意这个 *gamma 不是点乘
+    dbeta=np.sum(dout,axis=0)   # 求出 dbeta
+    dLdx_norm=dout*gamma
+    dLdvar=np.sum(dLdx_norm*(-0.5*(x-sample_mean)*((sample_var+eps)**(-1.5))),axis=0)
+    dLdu=np.sum(-1/np.sqrt(sample_var+eps)*dLdx_norm,axis=0)
+    dLdx=dLdx_norm*(1/np.sqrt(sample_var+eps))+dLdvar*(2/x.shape[0])*(x-sample_mean)+dLdu/x.shape[0]
+    
+    dx=dLdx
+
+
+    
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -283,17 +326,16 @@ def batchnorm_backward(dout, cache):
 
 
 def batchnorm_backward_alt(dout, cache):
-    """Alternative backward pass for batch normalization.
+    """Backward pass for batch normalization.
 
-    For this implementation you should work out the derivatives for the batch
-    normalizaton backward pass on paper and simplify as much as possible. You
-    should be able to derive a simple expression for the backward pass.
-    See the jupyter notebook for more hints.
+    Inputs:
+    - dout: Upstream derivatives, of shape (N, D)
+    - cache: Variable of intermediates from batchnorm_forward.
 
-    Note: This implementation should expect to receive the same cache variable
-    as batchnorm_backward, but might not use all of the values in the cache.
-
-    Inputs / outputs: Same as batchnorm_backward
+    Returns a tuple of:
+    - dx: Gradient with respect to inputs x, of shape (N, D)
+    - dgamma: Gradient with respect to scale parameter gamma, of shape (D,)
+    - dbeta: Gradient with respect to shift parameter beta, of shape (D,)
     """
     dx, dgamma, dbeta = None, None, None
     ###########################################################################
@@ -306,8 +348,21 @@ def batchnorm_backward_alt(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x, x_norm, gamma, sample_mean, sample_var, eps = cache
+    N = x.shape[0]
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(x_norm * dout, axis=0)
 
+    std=np.sqrt(sample_var+eps)
+    dLdx_norm=dout*gamma
+    
+    dLdvar=np.sum(dLdx_norm*-0.5*(x-sample_mean)*(std**-3),axis=0)
+    dLdu=np.sum(dLdx_norm*-1/std,axis=0)
+
+    dx = dLdx_norm/std + dLdvar*2/N*(x-sample_mean)+dLdu/N
+    
+
+    
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
