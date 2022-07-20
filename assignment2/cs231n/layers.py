@@ -1,4 +1,5 @@
 from builtins import range
+from matplotlib.pyplot import axis
 import numpy as np
 
 
@@ -147,16 +148,13 @@ def softmax_loss(x, y):
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     num_train = x.shape[0]
-    num_class = x.shape[1]
-    correct_class_score = x[range(num_train), [y]].T  # 注意这个到底是啥意思呜呜呜
-    margin = np.maximum(0, x-correct_class_score+1)
-    margin[range(num_train), y] = 0
-    loss = np.sum(margin)/num_train
+    scores = x - np.max(x, axis=1, keepdims=True)  # 进行平移
+    f = np.exp(scores)  # 用e进行归一化
+    normalized_f = f/np.sum(f, axis=1, keepdims=True)
+    loss = np.sum(-np.log(f[range(num_train), y]/np.sum(f, axis=1)))/num_train
 
-    margin[margin > 0] = 1
-    incorrect_number = np.sum(margin, axis=1)
-    margin[range(num_train), y] -= incorrect_number
-    dx = margin/num_train
+    normalized_f[range(num_train), y] -= 1
+    dx = normalized_f/num_train
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -406,7 +404,15 @@ def layernorm_forward(x, gamma, beta, ln_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x_mean=np.mean(x,axis=1,keepdims=True)
+    x_var=np.var(x,axis=1,keepdims=True)
+    std=np.sqrt(x_var+eps)
+    x_norm=(x-x_mean)/std
+    out=gamma*x_norm+beta
+
+    cache=(x,x_norm,gamma,x_mean,x_var,eps)
+
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -440,7 +446,16 @@ def layernorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x,x_norm,gamma,x_mean,x_var,eps=cache # (x,x_norm,gamma,x_mean,x_var,eps)
+    dgamma=np.sum(dout*x_norm,axis=0)  # 注意这个 *gamma 不是点乘
+    dbeta=np.sum(dout,axis=0)   # 求出 dbeta
+
+    D=1.0*x.shape[1]
+    dldx_norm=dout*gamma
+    dldvar=np.sum(-0.5*dldx_norm*(x-x_mean)*((x_var+eps)**-1.5),axis=1)
+    dldu=np.sum(-dldx_norm/np.sqrt(x_var+eps),axis=1)
+    dx=dldx_norm/np.sqrt(x_var+eps)+dldu.reshape(-1,1)/D+dldvar.reshape(-1,1)*2/D*(x-x_mean)
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -485,8 +500,9 @@ def dropout_forward(x, dropout_param):
         # Store the dropout mask in the mask variable.                        #
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        p=dropout_param['p']
+        mask=np.random.rand(*x.shape)<p
+        out=x*mask
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -498,7 +514,7 @@ def dropout_forward(x, dropout_param):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        out=x
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -528,7 +544,7 @@ def dropout_backward(dout, cache):
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        dx=dout*mask
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -572,7 +588,26 @@ def conv_forward_naive(x, w, b, conv_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    stride=conv_param['stride']
+    pad=conv_param['pad']
+    x_pad = x
+    F = w.shape[0]  # 滤波器数量
+    C = w.shape[0]  # 通道数量
+
+    H = x.shape[2]  # 输入 x 的高度
+    W = x.shape[3]  # 输入 x 的宽度
+
+    HH = w.shape[2] # 滤波器的高度
+    WW = w.shape[3] # 滤波器的宽度
+
+    # 是否需要填充？
+    if pad != 0:
+      x_pad=np.pad(x[:,:],pad,'contant')  # 对每一个通道进行填充
+
+    H_=1+(H + 2*pad -HH)/stride   # 输出特征图的高度
+    W_ = 1 + (W + 2 * pad - WW) / stride  # 输出特征图的宽度
+
+    
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
