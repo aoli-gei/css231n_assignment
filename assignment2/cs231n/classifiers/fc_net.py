@@ -84,13 +84,14 @@ class FullyConnectedNet(object):
             self.params['W' + str(i+1)] = W
             self.params['b'+str(i+1)] = b
 
-        if normalization == 'batchnorm':
+        if normalization != None:
             for i in range(self.num_layers-1):
                 gamma = np.ones(layer_dims[i+1])
                 beta = np.zeros(layer_dims[i+1])
 
                 self.params['gamma'+str(i+1)] = gamma
                 self.params['beta'+str(i+1)] = beta
+        
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -166,6 +167,7 @@ class FullyConnectedNet(object):
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         x=X
         caches=[]   # 保存有网络的中间信息
+        dropout_caches=[]
         for i in range(self.num_layers-1):
             W=self.params['W'+str(i+1)]
             b=self.params['b'+str(i+1)]
@@ -179,6 +181,16 @@ class FullyConnectedNet(object):
                 beta=self.params['beta'+str(i+1)]
                 bn_param=self.bn_params[i]
                 out,cache=affine_bn_relu_forward(x,W,b,gamma,beta,bn_param)
+            
+            elif self.normalization=='layernorm':
+                gamma=self.params['gamma'+str(i+1)]
+                beta=self.params['beta'+str(i+1)]
+                ln_param=self.bn_params[i]
+                out,cache=affine_ln_relu_forward(x,W,b,gamma,beta,ln_param)
+
+            if self.use_dropout:
+                out,dropout_cache=dropout_forward(out,self.dropout_param)
+                dropout_caches.append(dropout_cache)
 
             # 保存
             caches.append(cache)# 保存了当前层的输入信息
@@ -224,15 +236,25 @@ class FullyConnectedNet(object):
         grads['W'+str(self.num_layers)]=dW
         grads['b'+str(self.num_layers)]=db
 
-        if self.normalization == None:
-            for i in range(self.num_layers-2,-1,-1):
+        for i in range(self.num_layers-2,-1,-1):
+            if self.use_dropout:
+                dout=dropout_backward(dout,dropout_caches[i])
+
+            if self.normalization == None:
                 dout,dW,db=affine_relu_backward(dout,caches[i])
                 dW+=self.reg*self.params['W'+str(i+1)]
                 grads['W'+str(i+1)]=dW
                 grads['b'+str(i+1)]=db
-        elif self.normalization == "batchnorm":
-            for i in range(self.num_layers-2,-1,-1):
+            elif self.normalization == "batchnorm":
                 dout,dW,db,dgamma,dbeta = affine_bn_relu_backward(dout,caches[i])
+                dW+=self.reg*self.params['W'+str(i+1)]
+                grads['W'+str(i+1)]=dW
+                grads['b'+str(i+1)]=db
+                grads['gamma'+str(i+1)]=dgamma
+                grads['beta'+str(i+1)]=dbeta
+
+            elif self.normalization=="layernorm":
+                dout,dW,db,dgamma,dbeta=affine_ln_relu_backward(dout,caches[i])
                 dW+=self.reg*self.params['W'+str(i+1)]
                 grads['W'+str(i+1)]=dW
                 grads['b'+str(i+1)]=db
