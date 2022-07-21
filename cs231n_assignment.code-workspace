@@ -7,6 +7,7 @@
 	"settings": {
 		"jupyter.jupyterServerType": "local",
 		"editor.formatOnType": true,
-		"python.envFile": "${workspaceFolder}/.cs231n_env"
+		"python.envFile": "${workspaceFolder}/.cs231n_env",
+		"python.formatting.provider": "yapf"
 	}
 }

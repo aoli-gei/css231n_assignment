@@ -32,12 +32,12 @@ class ThreeLayerConvNet(object):
         Initialize a new network.
 
         Inputs:
-        - input_dim: Tuple (C, H, W) giving size of input data
-        - num_filters: Number of filters to use in the convolutional layer
-        - filter_size: Width/height of filters to use in the convolutional layer
-        - hidden_dim: Number of units to use in the fully-connected hidden layer
-        - num_classes: Number of scores to produce from the final affine layer.
-        - weight_scale: Scalar giving standard deviation for random initialization
+        - input_dim: Tuple (C, H, W) giving size of input data 输入数据的维度
+        - num_filters: Number of filters to use in the convolutional layer  卷积核的数量
+        - filter_size: Width/height of filters to use in the convolutional layer    卷积核的大小
+        - hidden_dim: Number of units to use in the fully-connected hidden layer    全连接隐层大小
+        - num_classes: Number of scores to produce from the final affine layer.     类别
+        - weight_scale: Scalar giving standard deviation for random initialization  
           of weights.
         - reg: Scalar giving L2 regularization strength
         - dtype: numpy datatype to use for computation.
@@ -62,8 +62,28 @@ class ThreeLayerConvNet(object):
         # the start of the loss() function to see how that happens.                #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        # 上面说，我们假设我们使用某种特殊的取值，让图像经过卷积之后尺寸不变
+        C, H, W = input_dim
+        self.params['W1'] = np.random.normal(loc=0.0,
+                                             scale=weight_scale,
+                                             size=(num_filters, C, filter_size,
+                                                   filter_size))
+        self.params['b1'] = np.zeros(num_filters)
 
-        pass
+        HH = H // 2
+        WW = W // 2
+        # 因为使用了2x2池化，所以尺度减半
+
+        self.params['W2'] = np.random.normal(loc=0.0,
+                                             scale=weight_scale,
+                                             size=(num_filters * HH * WW,
+                                                   hidden_dim))
+        self.params['b2'] = np.zeros(hidden_dim)
+
+        self.params['W3'] = np.random.normal(loc=0.0,
+                                             scale=weight_scale,
+                                             size=(hidden_dim, num_classes))
+        self.params['b3'] = np.zeros(num_classes)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -102,7 +122,9 @@ class ThreeLayerConvNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        out, cache1 = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
+        out, cache2 = affine_relu_forward(out, W2, b2)
+        scores, cache3 = affine_forward(out, W3, b3)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -124,8 +146,23 @@ class ThreeLayerConvNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        # out, cache1 = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
+        # out, cache2 = affine_relu_forward(out, W2, b2)
+        # scores, cache3 = affine_forward(out, W3, b3)
 
-        pass
+        loss, dout = softmax_loss(scores, y)
+        loss += 0.5 * self.reg * (np.sum(W1**2) + np.sum(W2**2) +
+                                  np.sum(W3**2))
+        dfc_out2,dW3,db3 = affine_backward(dout, cache3)
+        dfc_out1,dW2,db2 = affine_relu_backward(dfc_out2, cache2)
+        dconv_out,dW1,db1= conv_relu_pool_backward(dfc_out1, cache1)
+
+        grads['W1']=dW1+self.reg*W1
+        grads['b1']=db1
+        grads['W2'] = dW2 + self.reg * W2
+        grads['b2'] = db2
+        grads['W3'] = dW3 + self.reg * W3
+        grads['b3'] = db3
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
