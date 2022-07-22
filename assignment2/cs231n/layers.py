@@ -706,7 +706,8 @@ def conv_backward_naive(dout, cache):
                     dw[f] += dout[index, f, loc_x, loc_y] * x_part
 
                     # 计算dx
-                    dx[index, :, i:i + HH, j:j + WW] += w[f]*dout[index, f, loc_x, loc_y]
+                    dx[index, :, i:i + HH,
+                       j:j + WW] += w[f] * dout[index, f, loc_x, loc_y]
 
                     # 计算db,直接锁定那个值
                     db[f] += np.sum(dout[index, f, loc_x, loc_y])
@@ -747,17 +748,17 @@ def max_pool_forward_naive(x, pool_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    N=x.shape[0]    # 图片数量
-    C=x.shape[1]    # 图片通道数
-    H=x.shape[2]    # 图片高度
-    W=x.shape[3]    # 图片宽度
+    N = x.shape[0]  # 图片数量
+    C = x.shape[1]  # 图片通道数
+    H = x.shape[2]  # 图片高度
+    W = x.shape[3]  # 图片宽度
 
-    pool_height=pool_param['pool_height']
-    pool_width=pool_param['pool_width']
-    stride=pool_param['stride']
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
+    stride = pool_param['stride']
     H_out = 1 + (H - pool_height) // stride
     W_out = 1 + (W - pool_width) // stride
-    out=np.zeros((N,C,H_out,W_out))
+    out = np.zeros((N, C, H_out, W_out))
     # for index in range(N):
     #     loc_x = 0
     #     for i in range(0, H - pool_height + 1, stride):
@@ -773,9 +774,9 @@ def max_pool_forward_naive(x, pool_param):
         for j in range(C):
             for m in range(H_out):
                 for n in range(W_out):
-                    max=np.max(x[i,j,m*stride:m*stride+pool_height,n*stride:n*stride+pool_width])
-                    out[i,j,m,n]=max
-    
+                    max = np.max(x[i, j, m * stride:m * stride + pool_height,
+                                   n * stride:n * stride + pool_width])
+                    out[i, j, m, n] = max
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -801,26 +802,31 @@ def max_pool_backward_naive(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    x,pool_param = cache
-    N=x.shape[0]    # 图片数量
-    C=x.shape[1]    # 图片通道数
-    H=x.shape[2]    # 图片高度
-    W=x.shape[3]    # 图片宽度
-    stride=pool_param['stride']
+    x, pool_param = cache
+    N = x.shape[0]  # 图片数量
+    C = x.shape[1]  # 图片通道数
+    H = x.shape[2]  # 图片高度
+    W = x.shape[3]  # 图片宽度
+    stride = pool_param['stride']
     pool_height = pool_param['pool_height']
     pool_width = pool_param['pool_width']
 
     N, C, H_out, W_out = dout.shape
-    dx=np.zeros_like(x)
+    dx = np.zeros_like(x)
 
     for i in range(N):
         for j in range(C):
             for m in range(H_out):
                 for n in range(W_out):
-                    index=np.argmax(x[i,j,m*stride:m*stride+pool_height,n*stride:n*stride+pool_width])  #第i张图片，第c通道，抓出一个二位数组（图像）
-                    ind = np.unravel_index(index,(pool_height,pool_width))  # 坐标还原
-                    dx[i,j,m*stride:m*stride+pool_height,n*stride:n*stride+pool_width][ind]=dout[i,j,m,n]
-
+                    index = np.argmax(x[i, j,
+                                        m * stride:m * stride + pool_height,
+                                        n * stride:n * stride +
+                                        pool_width])  #第i张图片，第c通道，抓出一个二位数组（图像）
+                    ind = np.unravel_index(index,
+                                           (pool_height, pool_width))  # 坐标还原
+                    dx[i, j, m * stride:m * stride + pool_height,
+                       n * stride:n * stride + pool_width][ind] = dout[i, j, m,
+                                                                       n]
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -861,7 +867,10 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, C, H, W = x.shape  #原本为(N,C,H,W)
+    x_t = x.transpose(0, 2, 3, 1).reshape(N * H * W, C)  # 转换为(N,H,W,C)
+    out, cache = batchnorm_forward(x_t, gamma, beta, bn_param)
+    out = out.reshape(N, H, W, C).transpose(0, 3, 1, 2)  # 恢复为(N,C,H,W)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -894,7 +903,10 @@ def spatial_batchnorm_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, C, H, W = dout.shape
+    dout_t = dout.transpose(0, 2, 3, 1).reshape(N * H * W, C)
+    dx, dgamma, dbeta = batchnorm_backward(dout_t, cache)
+    dx = dx.reshape(N, H, W, C).transpose(0, 3, 1, 2)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -935,7 +947,15 @@ def spatial_groupnorm_forward(x, gamma, beta, G, gn_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, C, H, W = x.shape
+    num_c = C // G  # 每一组的通道数
+    x_t = x.reshape(N, G, num_c, H, W)  # 将其分为 G 组，每组有 num_C 个通道，
+    mean = np.mean(x_t, axis=(2, 3, 4), keepdims=True)  # 每一组求平均
+    var = np.var(x_t, axis=(2, 3, 4), keepdims=True)  # 每一组求方差
+    x_t = (x_t - mean) / np.sqrt(var + eps)  # 每一组正则化
+    x_norm = x_t.reshape(N, C, H, W)
+    out = x_norm * gamma + beta
+    cache = (x, x_norm, gamma, mean, var, eps, G)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -963,8 +983,26 @@ def spatial_groupnorm_backward(dout, cache):
     # This will be extremely similar to the layer norm implementation.        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    x, x_norm, gamma, mean, var, eps, G = cache
+    N, C, H, W = dout.shape
+    M = C // G * H * W
 
-    pass
+    dgamma = np.sum(dout * x_norm, axis=(0, 2, 3))[None, :, None,
+                                                   None]  # 这里得到了一个向量，需要把他还原回四维
+    dbeta = np.sum(dout, axis=(0, 2, 3))[None, :, None, None]
+
+    x_t = x.reshape(N, G, C // G, H, W)  # 变换形状，进行分组
+
+    # (N,C,H,W)->(N,G,num_c,H,W) 当成[N,G]看，带入ln层
+    dx_norm = (dout * gamma).reshape(N, G, C // G, H, W)
+
+    dvar = np.sum(-0.5 * dx_norm * (x_t - mean) * ((var + eps)**-1.5),
+                  axis=(2, 3, 4))
+
+    dmean = np.sum(-dx_norm / np.sqrt(var + eps), axis=(2, 3, 4))
+    dx = dx_norm / np.sqrt(var + eps) + dmean.reshape(
+        N, G, 1, 1, 1) / M + dvar.reshape(N, G, 1, 1, 1) * 2 / M * (x_t - mean)
+    dx = dx.reshape(N, C, H, W)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################

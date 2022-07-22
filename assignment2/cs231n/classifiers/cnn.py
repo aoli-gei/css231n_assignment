@@ -153,12 +153,12 @@ class ThreeLayerConvNet(object):
         loss, dout = softmax_loss(scores, y)
         loss += 0.5 * self.reg * (np.sum(W1**2) + np.sum(W2**2) +
                                   np.sum(W3**2))
-        dfc_out2,dW3,db3 = affine_backward(dout, cache3)
-        dfc_out1,dW2,db2 = affine_relu_backward(dfc_out2, cache2)
-        dconv_out,dW1,db1= conv_relu_pool_backward(dfc_out1, cache1)
+        dfc_out2, dW3, db3 = affine_backward(dout, cache3)
+        dfc_out1, dW2, db2 = affine_relu_backward(dfc_out2, cache2)
+        dconv_out, dW1, db1 = conv_relu_pool_backward(dfc_out1, cache1)
 
-        grads['W1']=dW1+self.reg*W1
-        grads['b1']=db1
+        grads['W1'] = dW1 + self.reg * W1
+        grads['b1'] = db1
         grads['W2'] = dW2 + self.reg * W2
         grads['b2'] = db2
         grads['W3'] = dW3 + self.reg * W3
