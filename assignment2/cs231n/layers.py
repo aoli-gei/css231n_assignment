@@ -821,7 +821,7 @@ def max_pool_backward_naive(dout, cache):
                     index = np.argmax(x[i, j,
                                         m * stride:m * stride + pool_height,
                                         n * stride:n * stride +
-                                        pool_width])  #第i张图片，第c通道，抓出一个二位数组（图像）
+                                        pool_width])  # 第i张图片，第c通道，抓出一个二位数组（图像）
                     ind = np.unravel_index(index,
                                            (pool_height, pool_width))  # 坐标还原
                     dx[i, j, m * stride:m * stride + pool_height,
@@ -867,7 +867,7 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    N, C, H, W = x.shape  #原本为(N,C,H,W)
+    N, C, H, W = x.shape  # 原本为(N,C,H,W)
     x_t = x.transpose(0, 2, 3, 1).reshape(N * H * W, C)  # 转换为(N,H,W,C)
     out, cache = batchnorm_forward(x_t, gamma, beta, bn_param)
     out = out.reshape(N, H, W, C).transpose(0, 3, 1, 2)  # 恢复为(N,C,H,W)

@@ -1,9 +1,12 @@
+from operator import mod
+from statistics import mode
 import torch
 import random
 import torchvision.transforms as T
 import numpy as np
 from .image_utils import SQUEEZENET_MEAN, SQUEEZENET_STD
 from scipy.ndimage.filters import gaussian_filter1d
+
 
 def compute_saliency_maps(X, y, model):
     """
@@ -34,13 +37,20 @@ def compute_saliency_maps(X, y, model):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    scores = model(X)   # N x C
+    scores_true = scores.gather(1, y.view(-1, 1)).squeeze()  # N x 1 -> N
+    scores_true.backward(torch.ones(scores_true.size()))    # 对这些值进行反向传播
+    saliency = X.grad  # N x C x H x W
+
+    saliency = saliency.abs()
+    saliency, _ = torch.max(saliency, dim=1)  # 返回值：一个为结果，另一个是放回最大元素所在列的索引
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                             END OF YOUR CODE                               #
     ##############################################################################
     return saliency
+
 
 def make_fooling_image(X, target_y, model):
     """
@@ -76,13 +86,23 @@ def make_fooling_image(X, target_y, model):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    for i in range(100):
+        scores = model(X_fooling)
+        scores = scores[:, target_y]
+        model.zero_grad()
+        scores.backward()
+        grad = X_fooling.grad
+        dx = learning_rate * grad / torch.linalg.norm(grad)
+        with torch.no_grad():
+            X_fooling = X_fooling + dx
+        X_fooling = X_fooling.requires_grad_()
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                             END OF YOUR CODE                               #
     ##############################################################################
     return X_fooling
+
 
 def class_visualization_update_step(img, model, target_y, l2_reg, learning_rate):
     ########################################################################
@@ -94,7 +114,15 @@ def class_visualization_update_step(img, model, target_y, l2_reg, learning_rate)
     ########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    img = img.requires_grad_()
+    scores = model(img)
+    scores = scores[:, target_y]   # 只关注目标类别进行反向传播
+    model.zero_grad()
+    scores.backward()
+    grad = img.grad
+    grad -= 2*l2_reg*img.data     # 计算梯度的时候要加上L2正则化的梯度
+    img.data += learning_rate*grad/torch.linalg.norm(grad)
+    img.grad.zero_()
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ########################################################################
@@ -112,6 +140,7 @@ def preprocess(img, size=224):
     ])
     return transform(img)
 
+
 def deprocess(img, should_rescale=True):
     transform = T.Compose([
         T.Lambda(lambda x: x[0]),
@@ -122,10 +151,12 @@ def deprocess(img, should_rescale=True):
     ])
     return transform(img)
 
+
 def rescale(x):
     low, high = x.min(), x.max()
     x_rescaled = (x - low) / (high - low)
     return x_rescaled
+
 
 def blur_image(X, sigma=1):
     X_np = X.cpu().clone().numpy()
@@ -133,6 +164,7 @@ def blur_image(X, sigma=1):
     X_np = gaussian_filter1d(X_np, sigma, axis=3)
     X.copy_(torch.Tensor(X_np).type_as(X))
     return X
+
 
 def jitter(X, ox, oy):
     """
